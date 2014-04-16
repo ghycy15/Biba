@@ -1,13 +1,9 @@
 package BibaMain;
 
 import java.sql.*;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
-import oracle.jdbc.*;
-import oracle.jdbc.pool.OracleDataSource;
 import java.io.*;
+
+import BibaOperation.BibaStrict;
 
 public class BibaMain {
 
@@ -23,14 +19,16 @@ public class BibaMain {
 
 		user = readEntry("user: ");
 
-		currUser = new User(user, -1);
+		currUser = new User(user, -1, "Untrusted");
 		ResultSet rset = stmt
-				.executeQuery("select intLevel from users where userName ="
+				.executeQuery("select intLevel,trusted from users where userName ="
 						+ "\'" + user + "\'");
 
 		while (rset.next()) {
 			currUser.intLevel = Integer.parseInt(rset.getString(1));
-			System.out.println(Integer.parseInt(rset.getString(1)));
+			currUser.trusted = rset.getString(2);
+			System.out.println("Your integrity level is: "+Integer.parseInt(rset.getString(1)));
+			System.out.println("Subject catalog: "+currUser.trusted);
 		}
 
 		if (currUser.intLevel == -1) {
@@ -42,6 +40,11 @@ public class BibaMain {
 		}
 
 		Tables tables = new Tables();
+		rset = stmt.executeQuery("SELECT table_name FROM user_tables");
+
+		while (rset.next()) {
+			tables.addTable(rset.getString(1));
+		}
 
 		while (true) {
 			String query = readEntry("input query: ");
@@ -52,75 +55,19 @@ public class BibaMain {
 				conn.close();
 				System.exit(0);
 			}
-
+			
 			if (query.toLowerCase().contains("insert")) {
-				if (query.toLowerCase().contains("users")) {
-
-				} else {
-					query = query.substring(0, query.lastIndexOf(')')) + ","
-							+ currUser.intLevel + ")";
-				}
-
-				rset = stmt.executeQuery(query);
-
-			} else {
-
-				Iterator tableIter = tables.getIter();
-				List<String> views = new LinkedList<String>();
-
-				// stmt.executeQuery("DROP VIEW ordersadmin");
-
-				while (tableIter.hasNext()) {
-					String table = (String) tableIter.next();
-					// System.out.print(table + " ");
-					if (query.toLowerCase().contains(table)) {
-
-						try {
-							rset = stmt.executeQuery("CREATE VIEW " + table
-									+ currUser.userName + " as select * from "
-									+ table + " where intLevel <= "
-									+ currUser.intLevel);
-
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						query = query.toLowerCase()
-								.replace(table, table + currUser.userName)
-								.replace("\n", "");
-						views.add(table);
-					}
-				}
-
-				System.out.println(query);
-				System.out.flush();
-
-				try {
-					rset = stmt.executeQuery(query);
-
-					ResultSetMetaData rsmd = rset.getMetaData();
-
-					for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-						System.out.print(rsmd.getColumnName(i) + " ");
-					}
-					System.out.println();
-					while (rset.next()) {
-						for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-							System.out.print(rset.getString(i) + " ");
-						}
-						System.out.println();
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-				for (String view : views) {
-					rset = stmt.executeQuery("DROP VIEW " + view
-							+ currUser.userName);
-				}
+				BibaStrict.insert(currUser, tables, stmt, query);
+			} else if (query.toLowerCase().startsWith("drop table")) {
+				BibaStrict.drop(currUser, tables, stmt, query);
+			} else if (query.toLowerCase().startsWith("update")) {
+				BibaStrict.update(currUser, tables, stmt, query);
+			} else if (query.toLowerCase().startsWith("select")) {
+				BibaStrict.select(currUser, tables, stmt, query);
+			} else if (query.toLowerCase().startsWith("create table")) {
+				BibaStrict.create(currUser, tables, stmt, query);
 			}
-
 		}
-
 	}
 
 	// Utility function to read a line from standard input
