@@ -12,7 +12,7 @@ import BibaMain.Tables;
 import BibaMain.User;
 
 public class BibaRing {
-	public void select(User currUser, Tables tables, Statement stmt,
+	public static void select(User currUser, Tables tables, Statement stmt,
 			String query) {
 		ResultSet rset = null;
 		

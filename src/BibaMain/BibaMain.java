@@ -3,6 +3,8 @@ package BibaMain;
 import java.sql.*;
 import java.io.*;
 
+import BibaOperation.BibaLowWaterMark;
+import BibaOperation.BibaRing;
 import BibaOperation.BibaStrict;
 
 public class BibaMain {
@@ -45,6 +47,15 @@ public class BibaMain {
 		while (rset.next()) {
 			tables.addTable(rset.getString(1));
 		}
+		
+		String mode = readEntry("Select Mode(S for Strict, L for Low Water Mark, R for Ring): ");
+		if(mode.toLowerCase().equals("L")){
+			mode = "L";
+		} else if (mode.toLowerCase().equals("R")){
+			mode = "R";
+		} else {
+			mode = "S";
+		}
 
 		while (true) {
 			String query = readEntry("input query: ");
@@ -63,7 +74,13 @@ public class BibaMain {
 			} else if (query.toLowerCase().startsWith("update")) {
 				BibaStrict.update(currUser, tables, stmt, query);
 			} else if (query.toLowerCase().startsWith("select")) {
-				BibaStrict.select(currUser, tables, stmt, query);
+				if(mode.equals("R")){
+					BibaRing.select(currUser, tables, stmt, query);
+				} else if(mode.equals("L")){
+					BibaLowWaterMark.select(currUser, tables, stmt, query);
+				} else {
+					BibaStrict.select(currUser, tables, stmt, query);
+				}
 			} else if (query.toLowerCase().startsWith("create table")) {
 				BibaStrict.create(currUser, tables, stmt, query);
 			}
