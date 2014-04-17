@@ -42,7 +42,7 @@ public class BibaStrict {
 			}
 		}
 
-		System.out.println(query);
+		System.out.println(query + currUser.intLevel);
 		System.out.flush();
 
 		try {

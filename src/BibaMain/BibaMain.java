@@ -29,8 +29,9 @@ public class BibaMain {
 		while (rset.next()) {
 			currUser.intLevel = Integer.parseInt(rset.getString(1));
 			currUser.trusted = rset.getString(2);
-			System.out.println("Your integrity level is: "+Integer.parseInt(rset.getString(1)));
-			System.out.println("Subject catalog: "+currUser.trusted);
+			System.out.println("Your integrity level is: "
+					+ Integer.parseInt(rset.getString(1)));
+			System.out.println("Subject catalog: " + currUser.trusted);
 		}
 
 		if (currUser.intLevel == -1) {
@@ -47,11 +48,11 @@ public class BibaMain {
 		while (rset.next()) {
 			tables.addTable(rset.getString(1));
 		}
-		
+
 		String mode = readEntry("Select Mode(S for Strict, L for Low Water Mark, R for Ring): ");
-		if(mode.toLowerCase().equals("L")){
+		if (mode.toLowerCase().equals("L")) {
 			mode = "L";
-		} else if (mode.toLowerCase().equals("R")){
+		} else if (mode.toLowerCase().equals("R")) {
 			mode = "R";
 		} else {
 			mode = "S";
@@ -66,17 +67,21 @@ public class BibaMain {
 				conn.close();
 				System.exit(0);
 			}
-			
+
 			if (query.toLowerCase().contains("insert")) {
 				BibaStrict.insert(currUser, tables, stmt, query);
 			} else if (query.toLowerCase().startsWith("drop table")) {
 				BibaStrict.drop(currUser, tables, stmt, query);
 			} else if (query.toLowerCase().startsWith("update")) {
-				BibaStrict.update(currUser, tables, stmt, query);
+				if (mode.equals("R")) {
+					BibaRing.update(currUser, tables, stmt, query);
+				} else {
+					BibaStrict.update(currUser, tables, stmt, query);
+				}
 			} else if (query.toLowerCase().startsWith("select")) {
-				if(mode.equals("R")){
+				if (mode.equals("R")) {
 					BibaRing.select(currUser, tables, stmt, query);
-				} else if(mode.equals("L")){
+				} else if (mode.equals("L")) {
 					BibaLowWaterMark.select(currUser, tables, stmt, query);
 				} else {
 					BibaStrict.select(currUser, tables, stmt, query);
